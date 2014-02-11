@@ -1,13 +1,11 @@
 user = @node[:users].first
 
-mongo_arbiter="na"
-
 if @node[:mongo_replset]
   mongo_nodes = @node[:utility_instances].select { |instance| instance[:name].match(/^mongodb_repl#{@node[:mongo_replset]}/) }
 
   # Chef::Log.info "Setting up Replica set: #{node[:mongo_replset]} \n mongo_nodes: #{mongo_nodes.inspect} \n executing on node #{@node[:name]}"
 
-  if (@node[:name].match(/_1$/) && (mongo_nodes.length == 3 || (mongo_nodes.length ==2 && mongo_arbiter.length > 3)))
+  if (@node[:name].match(/#{@node[:mongo_replset]}_1$/))
     setup_js = "#{node[:mongo_base]}/setup_replset.js"
 
     template setup_js do
@@ -18,7 +16,7 @@ if @node[:mongo_replset]
       variables({ :mongo_replset => @node[:mongo_replset],
                   :mongo_nodes => mongo_nodes,
                   :mongo_port => @node[:mongo_port],
-                  :mongo_arbiter => mongo_arbiter
+                  :mongo_arbiter => @node[:mongo_arbiter]
                })
     end
 

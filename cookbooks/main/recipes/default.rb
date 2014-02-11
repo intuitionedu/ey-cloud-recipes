@@ -4,6 +4,9 @@
 #  }
 #end
 
+# replica set recipes
+include_recipe "mongodb"
+
 #set the timezone to sydney
 include_recipe "timezone"
 
