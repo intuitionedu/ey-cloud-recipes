@@ -24,7 +24,11 @@ if !FileTest.directory?("#{InstallDirectory}/mms-agent")
   end
 
   execute "Install Mongo Monitoring Service Dependencies" do
-    command "sudo easy_install -U setuptools; sudo easy_install simplejson; sudo easy_install pymongo"    
+    command "sudo easy_install -U setuptools; sudo easy_install simplejson"    
+  end
+
+  execute "Install pymongo" do
+    command "sudo easy_install pymongo"
   end
 
   # hack to fix distribute - setuptools breaks distribute on default EY machine
