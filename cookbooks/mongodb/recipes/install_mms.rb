@@ -3,20 +3,18 @@
 # You will need to add a host to your MMS account to seed MMS.
 # Add multiple groups, one per cloud environment
 
-# NOTE: Environment names are cap sensitive
-API_KEYS = {
-  "EnvName" => ""
-}
-SECRET_KEYS = {
-  "EnvName" => ""
-}
-# setting API_KEYS and SECRET_KEYS for your environment effectively enables this recipe
-if API_KEYS.has_key? @node[:environment][:name] and SECRET_KEYS.has_key? @node[:environment][:name]
-  InstallDirectory = "/db/mms"
-  MmsFileName = "10gen-mms-agent"
-  MmsZipFile = "#{MmsFileName}.zip"
-  MmsZipUrl = "https://mms.10gen.com/settings/#{MmsZipFile}"
+	API_KEYS = {
+    "myiprodAU" => "9eb0e9d5fc8784f23732244fed5921ea",
+    "myitestAU" => "add416b6d92aeb9b9336f7d2ee1207e1",
+    }
 
+  InstallDirectory = "/db/mms"
+  MmsFileName = "mms-monitoring-agent"
+  MmsZipFile = "#{MmsFileName}.zip"
+  MmsZipUrl = "https://mms.mongodb.com/settings/#{MmsZipFile}"
+
+if API_KEYS.has_key? @node[:environment][:name]
+if !FileTest.directory?("#{InstallDirectory}/mms-agent")
   directory InstallDirectory do
     owner 'deploy'
     group 'deploy'
@@ -26,18 +24,23 @@ if API_KEYS.has_key? @node[:environment][:name] and SECRET_KEYS.has_key? @node[:
   end
 
   execute "Install Mongo Monitoring Service Dependencies" do
-    command "sudo easy_install -U setuptools; sudo easy_install simplejson; sudo easy_install pymongo"
-    not_if { FileTest.directory?("#{InstallDirectory}/mms-agent") }
+    command "sudo easy_install -U setuptools; sudo easy_install simplejson; sudo easy_install pymongo"    
+  end
+
+  # hack to fix distribute - setuptools breaks distribute on default EY machine
+  execute "Fix Setup Tools" do
+    command "cd #{InstallDirectory}; curl -O http://python-distribute.org/distribute_setup.py; sudo python distribute_setup.py; sudo rm distribute_setup.py"
   end
 
   execute "Fetch Mongo Monitoring Service zip file" do
     command "cd #{InstallDirectory}; wget #{MmsZipUrl}; unzip #{MmsZipFile}"
-    not_if { FileTest.directory?("#{InstallDirectory}/mms-agent") }
   end
 
   execute "Modify settings.py" do
-    cwd "#{InstallDirectory}/mms-agent"
-    command "sed -i 's/@API_KEY@/#{API_KEYS[@node[:environment][:name]]}/g' settings.py && sed -i 's/@SECRET_KEY@/#{SECRET_KEYS[@node[:environment][:name]]}/g' settings.py && sed -i 's/mms-stage/mms/g' settings.py"
+     cwd "#{InstallDirectory}/mms-agent"
+     command "sed -i 's/@DEFAULT_REQUIRE_VALID_SERVER_CERTIFICATES@/False/g' settings.py &&sed -i 's/@API_KEY@/#{API_KEYS[@node[:environment][:name]]}/g' settings.py && sed -i 's,@MMS_SERVER@,https://mms.mongodb.com,g' settings.py"
+
+
   end
 
   remote_file "#{InstallDirectory}/mms.sh" do
@@ -59,8 +62,8 @@ if API_KEYS.has_key? @node[:environment][:name] and SECRET_KEYS.has_key? @node[:
   end
 
   execute "Reload monit" do
-    command "sudo /etc/init.d/monit reload"
+    command "sudo monit reload && sudo monit"
   end
 
 end
-
+end
