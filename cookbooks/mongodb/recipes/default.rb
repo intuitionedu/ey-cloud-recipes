@@ -21,7 +21,6 @@ else
 
     include_recipe "mongodb::install"
     include_recipe "mongodb::configure"
-    #include_recipe "mongodb::backup"
     include_recipe "mongodb::start"
 
     if @node[:mongo_replset]
@@ -42,4 +41,10 @@ end
 if (@node[:instance_role] == 'util' && @node[:name].match(/#{@node[:mongo_replset]}_2$/))
   Chef::Log.info "Installing MMS on #{@node[:name]}"
   include_recipe "mongodb::install_mms"
+end
+
+#install mms on db_master or solo. This will need to change for db-less environments
+if (@node[:instance_role] == 'util' && @node[:name].match(/#{@node[:mongo_replset]}_2$/))
+  Chef::Log.info "Installing MMS backup on #{@node[:name]}"
+  include_recipe "mongodb::backup"
 end
